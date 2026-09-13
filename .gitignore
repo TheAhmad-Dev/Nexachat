@@ -1,0 +1,95 @@
+# =========================
+# Node.js / Dependencies
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================
+# Environment Variables / Secrets
+# =========================
+
+.env
+.env.*
+!.env.example
+
+
+# =========================
+# Expo / React Native
+# =========================
+
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+
+# =========================
+# Android
+# =========================
+
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
+android/.idea/
+
+
+# =========================
+# iOS
+# =========================
+
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+
+
+# =========================
+# Metro
+# =========================
+
+.metro-health-check*
+
+
+# =========================
+# Logs
+# =========================
+
+*.log
+
+
+# =========================
+# Operating System Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# IDE / Editor
+# =========================
+
+.vscode/
+.idea/
+
+
+# =========================
+# Temporary Files
+# =========================
+
+*.tmp
+*.temp
+
+
+# =========================
+# Firebase Private Credentials
+# =========================
+
+serviceAccountKey.json
+firebase-adminsdk*.json
+*-firebase-adminsdk*.json
