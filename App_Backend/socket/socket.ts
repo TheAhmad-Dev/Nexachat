@@ -2,7 +2,8 @@ import { Server as SocketIOServer, Socket } from "socket.io";
 import type { Server as HttpServer } from "node:http";
 import jwt from "jsonwebtoken";
 
-import Conversation from "../models/coversationSchema.js";
+// import Conversation from "../models/coversationSchema.js";
+import Conversation from "../utils/models/coversationSchema.js";
 import { env } from "../config/env.js";
 import { RegisterUserEvents } from "./UserEvents.js";
 import { RegisterChatEvents } from "./newchatEvents.js";

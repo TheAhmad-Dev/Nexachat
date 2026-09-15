@@ -264,12 +264,12 @@ const shapeStyles = {
   },
 };
 
-{/*
+/*
   // ===== Main function of this page  =====
   1.Takes input field
   2. set focused when clicked 
   3.used in taking password and email as well 
-  */}
+  */
 
  
 const FieldShell = ({
@@ -331,7 +331,7 @@ const Login = () => {
 
 
 
- {/*
+ /*
               Call Back to the Check the Authenticity of the user existence in the system 
 
 
@@ -341,7 +341,7 @@ through (await signIn(emailRef.current, passwordRef.current);)
  
 and   set show paswword is false by default 
 
-    */}
+    */
 
   const handleSubmit = async () => {
     if (!emailRef.current.trim() || !passwordRef.current.trim()) {
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   },
 });
 
-{/*
+/*
             headerSection
 
 Controls the entire upper gradient section:
@@ -683,4 +683,4 @@ Controls the large lower form section:
        │ New User? Sign Up  │
        ╰────────────────────╯
 
-  */}
+  */

@@ -264,7 +264,7 @@ const handleLogout = () => {
         locations={[0, 0.28, 0.55, 0.78, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       {/* OVERLAY TO DEEPEN COLOR & DIM FULL-SCREEN BLUR INTENSITY */}
@@ -351,7 +351,7 @@ const handleLogout = () => {
                 intensity={Platform.OS === "android" ? 8 : 12}
                 tint="light"
                 experimentalBlurMethod={androidBlurMethod}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
             </View>
 
@@ -374,7 +374,7 @@ const handleLogout = () => {
                 intensity={Platform.OS === "android" ? 8 : 12}
                 tint="light"
                 experimentalBlurMethod={androidBlurMethod}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
             </View>
 
@@ -683,7 +683,7 @@ const handleLogout = () => {
           intensity={Platform.OS === "android" ? 12 : 20}
           tint="dark"
           experimentalBlurMethod={androidBlurMethod}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
 
         {/* HOME */}
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
 
 
   colorTintOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(15, 23, 42, 0.35)",
   },
 
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   glowOrb: {
     position: "absolute",
     borderRadius: 999,
-    backgroundColor: "#61c09c",
+    backgroundColor: "rgba(145, 125, 185, 0.25)",
     opacity: 0.4,
   },
 

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+// import User from "../models/User.js";
+import User from "../utils/models/User.js";
 import { generateToken } from "../utils/token.js";
 
 type AuthRequestBody = {

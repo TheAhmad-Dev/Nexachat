@@ -1,7 +1,10 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import mongoose from "mongoose";
-import Conversation from "../models/coversationSchema.js";
-import Message from "../models/Message.js";
+// import Conversation from "../models/coversationSchema.js";
+
+import Conversation from "../utils/models/coversationSchema.js";
+// import Message from "../models/Message.js";
+import Message from "../utils/models/Message.js";
 
 type ConversationType = "direct" | "group";
 

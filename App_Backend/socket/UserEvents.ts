@@ -1,5 +1,7 @@
 import { Server as IOSocketServer, Socket } from "socket.io";
-import User from "../models/User.js";
+// import User from "../models/User.js";
+import User from "../utils/models/User.js";
+
 import { generateToken } from "../utils/token.js";
 
 export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {

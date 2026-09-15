@@ -1,7 +1,7 @@
 import type { Response } from "express";
 
-import User from "../models/User.js";
-
+// import User from "../models/User.js";
+import User from "../utils/models/User.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 
 /*

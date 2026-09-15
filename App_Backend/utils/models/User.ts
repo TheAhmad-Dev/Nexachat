@@ -1,5 +1,5 @@
 import mongoose, { type Model } from "mongoose";
-import type { UserProps } from "../types.js";
+import type { UserProps } from "../../types.js";
 
 const { Schema, model, models } = mongoose;
 

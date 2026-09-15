@@ -517,7 +517,7 @@ const Home = () => {
   
 start={{ x: 1, y: 0 }}
 end={{ x: 0, y: 1 }}
-  style={StyleSheet.absoluteFillObject}
+  style={StyleSheet.absoluteFill}
 >
         {/* ===== GRADIENT HEADER — hard cut to black, literal reference match ===== */}
         <View style={styles.gradientHeader}>
@@ -639,7 +639,7 @@ end={{ x: 0, y: 1 }}
               onPress={() => setselectedTab(0)}
               style={[styles.tabStyle, selectTab == 0 && styles.activeTabStyle]}
             >
-              <Typos color={selectTab == 0 ? gradientTheme.bgPureBlack : colors.white} size={15} fontWeight="600">
+              <Typos color={selectTab == 0 ? gradientTheme.bgPureBlack : colors.white} size={15} fontWeight="700">
                 Direct Messages
               </Typos>
             </TouchableOpacity>
@@ -647,7 +647,7 @@ end={{ x: 0, y: 1 }}
               onPress={() => setselectedTab(1)}
               style={[styles.tabStyle, selectTab == 1 && styles.activeTabStyle]}
             >
-              <Typos color={selectTab == 1 ? gradientTheme.bgPureBlack : colors.white} size={15} fontWeight="600">
+              <Typos color={selectTab == 1 ? gradientTheme.bgPureBlack : colors.white} size={15} fontWeight="700">
                 Groups
               </Typos>
             </TouchableOpacity>
@@ -659,13 +659,23 @@ end={{ x: 0, y: 1 }}
              paddingVertical: spacingY._20
               }}>
             <View style={styles.conversationList}>
-              {selectTab == 0 &&
-                filteredDirect.map((item: ConversationProps, index) => (
-                  <MyConversationList key={index} item={item} router={router} showDivider={false} />
-                ))}
+            {selectTab == 0 &&
+  filteredDirect.map((item: ConversationProps, index) => (
+    <View key={item._id || index}>
+      <MyConversationList
+        item={item}
+        router={router}
+        showDivider={false}
+      />
+
+      {index < filteredDirect.length - 1 && (
+        <View style={styles.contactSeparator} />
+      )}
+    </View>
+  ))}
               {selectTab == 1 &&
                 filteredGroup.map((item: any, index) => (
-                  <MyConversationList key={index} item={item} router={router} showDivider={false} />
+                  <MyConversationList key={index} item={item} router={router} showDivider={true} />
                 ))}
             </View>
 
@@ -699,7 +709,7 @@ end={{ x: 0, y: 1 }}
             })
           }
         >
-          <Icon.Plus color={gradientTheme.bgPureBlack} size={VerticalScale(26)} weight="bold" />
+          <Icon.Plus color="#FFFFFF" size={VerticalScale(32)} weight="bold" />
         </Button>
     </LinearGradient>
     </ScreenWrapper>
@@ -780,14 +790,30 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
   },
-  activeTabStyle: { backgroundColor: colors.white },
-  conversationList: { paddingVertical: spacingY._10 },
-  floatingButton: {
-    height: VerticalScale(52),
-    width: VerticalScale(52),
-    borderRadius: 100,
-    position: "absolute",
-    bottom: VerticalScale(30),
-    right: VerticalScale(30),
+  activeTabStyle:
+   { backgroundColor: colors.white },
+  conversationList: 
+  { 
+    paddingVertical: spacingY._10 
   },
+floatingButton: {
+  height: VerticalScale(52),
+  width: VerticalScale(52),
+  borderRadius: VerticalScale(26),
+  position: "absolute",
+  bottom: VerticalScale(30),
+  right: VerticalScale(30),
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+  borderWidth: 2,
+  borderColor: "rgba(255,255,255,0.35)",
+},
+  contactSeparator: {
+  height: 0.5,
+  backgroundColor: "rgba(255, 255, 255, 0.30)",
+  marginLeft: 70,
+  marginRight: 2,
+  marginVertical: 1.5,
+},
 });

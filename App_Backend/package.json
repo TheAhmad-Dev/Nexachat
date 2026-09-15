@@ -4,13 +4,14 @@
   "description": "NexaChat backend API and Socket.IO server",
   "type": "module",
   "main": "dist/index.js",
-  "scripts": {
-    "dev": "nodemon --exec node --loader ts-node/esm index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck"
-  },
+ "scripts": {
+  "dev": "nodemon --exec tsx index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js",
+  "typecheck": "tsc --noEmit",
+  "test": "npm run typecheck"
+},
+
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import mongoose from "mongoose";
-import Message from "../models/Message.js";
+// import Message from "../models/Message.js";
+import Message from "../utils/models/Message.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 
 export const deleteMessage = async (
