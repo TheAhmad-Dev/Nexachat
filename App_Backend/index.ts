@@ -6,6 +6,8 @@ import http from "node:http";
 
 import myconnectedDatabase from "./config/db.js";
 import { env } from "./config/env.js";
+import { corsOptions } from "./config/cors.js";
+import { logger } from "./utils/logger.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import messageRoutes from "./routes/message.routes.js";
@@ -26,12 +28,8 @@ myapp.use(helmet());
 // Prevent excessively large JSON requests
 myapp.use(express.json({ limit: "1mb" }));
 
-// Basic CORS configuration
-myapp.use(
-  cors({
-    origin: "*",
-  })
-);
+// CORS policy lives in config/cors.ts (shared with Socket.IO).
+myapp.use(cors(corsOptions));
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -52,7 +50,7 @@ myapp.use(apiLimiter);
 // ==========================================
 
 myapp.use((req, _res, next) => {
-  console.log(`${req.method} ${req.url}`);
+  logger.debug(`${req.method} ${req.url}`);
   next();
 });
 
@@ -98,9 +96,9 @@ try {
   await myconnectedDatabase();
 
   myserver.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT} (${env.nodeEnv})`);
   });
 } catch (error) {
-  console.error("Application startup failed:", error);
+  logger.error("Application startup failed:", error);
   process.exit(1);
 }

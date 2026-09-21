@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 // import User from "../models/User.js";
 import User from "../utils/models/User.js";
-import { generateToken } from "../utils/token.js";
+import { buildAuthSession } from "../utils/token.js";
+import { logger } from "../utils/logger.js";
 
 type AuthRequestBody = {
   email?: unknown;
@@ -82,19 +83,8 @@ export const registerUser = async (
       avatar: normalizedAvatar,
     });
 
-    // Generate JWT
-    const token = generateToken(user);
-
-    response.status(201).json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar ?? "",
-      },
-    });
+    // One shared session shape for register/login/refresh.
+    response.status(201).json(buildAuthSession(user));
   } catch (error) {
     // MongoDB duplicate-key protection
     if (isDuplicateKeyError(error)) {
@@ -105,7 +95,7 @@ export const registerUser = async (
       return;
     }
 
-    console.error("Register user failed:", error);
+    logger.error("Register user failed:", error);
 
     response.status(500).json({
       success: false,
@@ -164,21 +154,9 @@ export const loginUser = async (
       return;
     }
 
-    // Generate JWT
-    const token = generateToken(user);
-
-    response.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar ?? "",
-      },
-    });
+    response.status(200).json(buildAuthSession(user));
   } catch (error) {
-    console.error("Login user failed:", error);
+    logger.error("Login user failed:", error);
 
     response.status(500).json({
       success: false,

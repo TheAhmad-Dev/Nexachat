@@ -4,7 +4,7 @@ import { savePushToken } from "../controls/notification.controls.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 
-const router = Router();
+const router: Router = Router();
 
 /*
  * Save the Expo Push Token belonging to the

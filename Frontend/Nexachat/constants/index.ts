@@ -1,25 +1,14 @@
-// // import { Platform } from "react-native";
-
-// //   export const API_URL = Platform.OS == "android"? "http://192.168.1.3:3000"  : "http://localhost:3000/";
-
-// // export const API_URL =
-// //   Platform.OS === "android"
-// //     ? "http://192.168.1.13:3000"
-// //     : "http://localhost:3000";
-// import { Platform } from "react-native";
-
-// export const API_URL =
-//   Platform.OS === "android"
-//       ? "http://192.168.1.9:3000"
-//     : "http://localhost:3000";
-
-    
-//     export const CLOUDINARY_CLOUD_NAME= "yv7ffnux";
-//     export const CLOUDINARY_UPLOAD_PRESET ="Nexachat" 
-   
-
-
-export const API_URL = process.env.EXPO_PUBLIC_API_URL!;
-
-export const CLOUDINARY_CLOUD_NAME = "yv7ffnux";
-export const CLOUDINARY_UPLOAD_PRESET = "Nexachat";
+/*
+ * Barrel re-export — the single source of truth for app
+ * configuration lives in ./config.ts. Every module can import
+ * from "@/constants", "../constants/index" or "@/constants/config"
+ * and always receives the same runtime-resolved API_URL.
+ *
+ * (The backend health check lives in services/apiHealth.ts —
+ * constants hold values, not network I/O.)
+ */
+export {
+  API_URL,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET,
+} from "./config";

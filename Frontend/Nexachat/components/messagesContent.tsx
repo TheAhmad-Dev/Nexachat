@@ -1,4 +1,12 @@
-import { Alert, Modal, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Image as RNImage,
+  Modal,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import React, { useState } from "react";
 import { Image } from "expo-image";
 import moment from "moment";
@@ -11,19 +19,35 @@ import { useAuth } from "@/context/authcontext";
 
 import Avatar from "./Avatar";
 import Typos from "./typos";
+import VideoPlayerModal from "./VideoPlayerModal";
 
 // Renders chat message bubbles, handles media modal previews, and exposes a long-press action for deletion
 const MessagesContent = ({
   item,
   isDirect,
   onDeleteMessage, // Function passed from parent component
+  onForwardMedia,
+  onSaveToGallery,
 }: {
   item: MessageProps;
   isDirect: boolean;
   onDeleteMessage?: (messageId: string) => void;
+  onForwardMedia?: (
+    mediaUrl: string,
+    mediaType: "image" | "video"
+  ) => void;
+  onSaveToGallery?: (
+    mediaUrl: string,
+    mediaType: "image" | "video"
+  ) => void;
 }) => {
   const { user: currentUser } = useAuth();
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [videoViewerVisible, setVideoViewerVisible] = useState(false);
+
+  const attachmentType: "image" | "video" =
+    item.attachmentType === "video" ? "video" : "image";
+  const isVideo = attachmentType === "video";
 
   const formattedDate = moment(item.createdAt).isSame(moment(), "day")
     ? moment(item.createdAt).format("h:mm A")
@@ -33,22 +57,41 @@ const MessagesContent = ({
 
   const handleImageOpen = () => setImageViewerVisible(true);
   const handleImageClose = () => setImageViewerVisible(false);
+  const handleVideoOpen = () => setVideoViewerVisible(true);
+  const handleVideoClose = () => setVideoViewerVisible(false);
 
   // Long press handler
   const handleLongPress = () => {
-    Alert.alert(
-      "Delete Message",
-      "Are you sure you want to delete this message?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => onDeleteMessage && onDeleteMessage(item._id),
-        },
-      ],
-      { cancelable: true }
-    );
+    const buttons: {
+      text: string;
+      style?: "default" | "cancel" | "destructive";
+      onPress?: () => void;
+    }[] = [];
+
+    if (item.attachment) {
+      buttons.push({
+        text: "Forward",
+        onPress: () =>
+          onForwardMedia &&
+          onForwardMedia(item.attachment as string, attachmentType),
+      });
+
+      buttons.push({
+        text: "Save to gallery",
+        onPress: () =>
+          onSaveToGallery &&
+          onSaveToGallery(item.attachment as string, attachmentType),
+      });
+    }
+
+    buttons.push({ text: "Cancel", style: "cancel" });
+    buttons.push({
+      text: "Delete",
+      style: "destructive",
+      onPress: () => onDeleteMessage && onDeleteMessage(item._id),
+    });
+
+    Alert.alert("Message", undefined, buttons, { cancelable: true });
   };
 
   return (
@@ -89,17 +132,74 @@ const MessagesContent = ({
         {item.attachment && (
           <>
             <Pressable
-              onPress={handleImageOpen}
+              onPress={isVideo ? handleVideoOpen : handleImageOpen}
               onLongPress={handleLongPress}
               delayLongPress={300}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             >
-              <Image
-                source={item.attachment}
-                contentFit="cover"
-                style={styles.attachment}
-                transition={100}
-              />
+              {isVideo ? (
+                <View style={styles.videoThumbWrapper}>
+                  <RNImage
+                    source={{ uri: item.attachment }}
+                    style={styles.attachment}
+                  />
+
+                  <View style={styles.playOverlay} pointerEvents="none">
+                    <View style={styles.playCircle}>
+                      <Icon.PlayIcon
+                        size={26}
+                        color="#FFFFFF"
+                        weight="fill"
+                      />
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.downloadButton}
+                    hitSlop={6}
+                    onPress={() =>
+                      onSaveToGallery &&
+                      onSaveToGallery(
+                        item.attachment as string,
+                        "video"
+                      )
+                    }
+                  >
+                    <Icon.DownloadSimpleIcon
+                      size={17}
+                      color="#FFFFFF"
+                      weight="bold"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.videoThumbWrapper}>
+                  <Image
+                    source={item.attachment}
+                    contentFit="cover"
+                    style={styles.attachment}
+                    transition={100}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.downloadButton}
+                    hitSlop={6}
+                    onPress={() =>
+                      onSaveToGallery &&
+                      onSaveToGallery(
+                        item.attachment as string,
+                        "image"
+                      )
+                    }
+                  >
+                    <Icon.DownloadSimpleIcon
+                      size={17}
+                      color="#FFFFFF"
+                      weight="bold"
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
             </Pressable>
 
             <Modal
@@ -131,6 +231,11 @@ const MessagesContent = ({
                 </Pressable>
               </View>
             </Modal>
+
+            <VideoPlayerModal
+              source={isVideo ? item.attachment : null}
+              onClose={handleVideoClose}
+            />
           </>
         )}
 
@@ -204,6 +309,37 @@ const styles = StyleSheet.create({
     width: scale(220),
     borderRadius: radius._10,
     marginBottom: VerticalScale(2),
+  },
+  videoThumbWrapper: {
+    position: "relative",
+  },
+  playOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playCircle: {
+    width: VerticalScale(48),
+    height: VerticalScale(48),
+    borderRadius: VerticalScale(24),
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  downloadButton: {
+    position: "absolute",
+    right: scale(8),
+    bottom: VerticalScale(8),
+    width: VerticalScale(30),
+    height: VerticalScale(30),
+    borderRadius: VerticalScale(15),
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalBackground: {
     flex: 1,

@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { ImagePickerAsset } from "expo-image-picker";
-import { Router } from "expo-router";
+import { router } from "expo-router";
 
 export type TypoProps = {
   size?: number;
@@ -129,7 +129,8 @@ export type ConversationListItemProps = {
   item: ConversationProps;
   showDivider: boolean;
   isGroup?: boolean;
-  router: Router;
+  /** expo-router singleton — supports push/replace/navigate with typed hrefs */
+  router: typeof router;
 };
 export type MessageProps = {
   _id: string;
@@ -142,6 +143,8 @@ export type MessageProps = {
 
   content: string;
   attachment?: string | null;
+  /** How clients should render `attachment`: "image" | "video". */
+  attachmentType?: string | null;
   createdAt: string;
 };
 export type ActivityIndicatorProps = {

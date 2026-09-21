@@ -2,6 +2,7 @@ import type { Response } from "express";
 
 // import User from "../models/User.js";
 import User from "../utils/models/User.js";
+import { logger } from "../utils/logger.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
 
 /*
@@ -86,19 +87,14 @@ export const savePushToken = async (
       return;
     }
 
-    console.log(
-      `Push token saved for user: ${userId}`
-    );
+    logger.debug(`Push token saved for user: ${userId}`);
 
     res.json({
       success: true,
       msg: "Push token saved successfully",
     });
   } catch (error) {
-    console.log(
-      "Failed to save push token:",
-      error
-    );
+    logger.error("Failed to save push token:", error);
 
     res.status(500).json({
       success: false,

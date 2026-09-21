@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, Animated, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { gradientTheme, colors } from "@/constants/theme";
-// import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SplashScreen() {
   // Animated values for scale and opacity

@@ -17,7 +17,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Icon from "phosphor-react-native";
 
@@ -38,7 +38,14 @@ import { useAuth } from "@/context/authcontext";
 import { scale, VerticalScale } from "@/utils/styling";
 
 // Services
-import { ReadyToUploadFile } from "@/services/imageService";
+import {
+  ReadyToUploadFile,
+  ReadyToUploadMedia,
+} from "@/services/imageService";
+import {
+  pickChatVideo,
+  saveToGallery,
+} from "@/services/mediaService";
 
 // Socket
 import {
@@ -64,6 +71,10 @@ const Chatting = () => {
   const [chatslelectedImage, setChatSelectedImage] = useState<{
     uri: string;
   } | null>(null);
+  const [chatSelectedVideo, setChatSelectedVideo] = useState<{
+    uri: string;
+  } | null>(null);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<MessageProps[]>([]);
@@ -277,6 +288,19 @@ const Chatting = () => {
   };
 
   /* =====================================================
+      VIDEO PICKER
+  ===================================================== */
+
+  const ChatVideoPicker = async () => {
+    const videoUri = await pickChatVideo();
+
+    if (videoUri) {
+      setChatSelectedImage(null);
+      setChatSelectedVideo({ uri: videoUri });
+    }
+  };
+
+  /* =====================================================
       PARTICIPANTS
   ===================================================== */
 
@@ -329,7 +353,8 @@ const Chatting = () => {
   const SendChat = async () => {
     if (
       !message.trim() &&
-      !chatslelectedImage
+      !chatslelectedImage &&
+      !chatSelectedVideo
     ) {
       return;
     }
@@ -351,6 +376,7 @@ const Chatting = () => {
 
     try {
       let Attachment = null;
+      let AttachmentType: "image" | "video" | null = null;
 
       /* -----------------------------
           UPLOAD IMAGE
@@ -365,10 +391,37 @@ const Chatting = () => {
 
         if (uploaded.success) {
           Attachment = uploaded.data;
+          AttachmentType = "image";
         } else {
           Alert.alert(
             "Upload Error",
             "Unable to upload the image."
+          );
+
+          setLoading(false);
+
+          return;
+        }
+      }
+
+      /* -----------------------------
+          UPLOAD VIDEO
+      ----------------------------- */
+
+      if (chatSelectedVideo) {
+        const uploaded = await ReadyToUploadMedia(
+          chatSelectedVideo,
+          "message-attachment",
+          "video"
+        );
+
+        if (uploaded.success) {
+          Attachment = uploaded.data;
+          AttachmentType = "video";
+        } else {
+          Alert.alert(
+            "Upload Error",
+            "Unable to upload the video."
           );
 
           setLoading(false);
@@ -390,10 +443,12 @@ const Chatting = () => {
         },
         content: message.trim(),
         attachment: Attachment,
+        attachmentType: AttachmentType,
       });
 
       setMessage("");
       setChatSelectedImage(null);
+      setChatSelectedVideo(null);
     } catch (error) {
       console.log(
         "Error in sending the message:",
@@ -523,6 +578,18 @@ const Chatting = () => {
                     onDeleteMessage={
                       handleDeleteMessage
                     }
+                    onForwardMedia={(mediaUrl, mediaType) =>
+                      router.push({
+                        // @ts-expect-error runtime string route; typed-routes
+                        // registry hasn't picked up the new screen yet
+                        pathname: "/(main)/ForwardPicker",
+                        params: {
+                          mediaUrl,
+                          mediaType,
+                        },
+                      })
+                    }
+                    onSaveToGallery={saveToGallery}
                   />
                 )}
                 keyExtractor={(
@@ -574,7 +641,11 @@ const Chatting = () => {
                   icon={
                     <TouchableOpacity
                       onPress={
-                        ChatImagePicker
+                        chatslelectedImage
+                          ? ChatImagePicker
+                          : chatSelectedVideo
+                            ? ChatVideoPicker
+                            : ChatImagePicker
                       }
                       activeOpacity={0.7}
                       style={
@@ -590,6 +661,18 @@ const Chatting = () => {
                             styles.selectedFile
                           }
                         />
+                      ) : chatSelectedVideo?.uri ? (
+                        <View
+                          style={
+                            styles.selectedVideoBadge
+                          }
+                        >
+                          <Icon.VideoCameraIcon
+                            size={17}
+                            color="#FFFFFF"
+                            weight="fill"
+                          />
+                        </View>
                       ) : (
                         <Icon.PlusIcon
                           size={19}
@@ -741,6 +824,15 @@ const styles = StyleSheet.create({
     width: VerticalScale(34),
     height: VerticalScale(34),
     borderRadius: VerticalScale(17),
+  },
+
+  selectedVideoBadge: {
+    width: VerticalScale(34),
+    height: VerticalScale(34),
+    borderRadius: VerticalScale(17),
+    backgroundColor: "rgba(68,68,74,0.96)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   sendButton: {

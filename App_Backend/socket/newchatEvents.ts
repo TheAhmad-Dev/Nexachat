@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import Conversation from "../utils/models/coversationSchema.js";
 // import Message from "../models/Message.js";
 import Message from "../utils/models/Message.js";
+import { logger } from "../utils/logger.js";
 
 type ConversationType = "direct" | "group";
 
@@ -19,6 +20,7 @@ interface NewMessageData {
   conversationId: string;
   content?: string;
   attachment?: string | null;
+  attachmentType?: string | null;
 }
 
 const isValidObjectId = (id: unknown): id is string => {
@@ -61,7 +63,7 @@ export function RegisterChatEvents(
         .sort({ updatedAt: -1 })
         .populate({
           path: "lastMessage",
-          select: "content senderId attachment createdAt",
+          select: "content senderId attachment attachmentType createdAt",
         })
         .populate({
           path: "participants",
@@ -74,7 +76,7 @@ export function RegisterChatEvents(
         data: conversations,
       });
     } catch (error) {
-      console.error(
+      logger.error(
         "Get Conversation Error:",
         error
       );
@@ -225,7 +227,7 @@ export function RegisterChatEvents(
               )
               .populate(
                 "lastMessage",
-                "content senderId attachment createdAt"
+                "content senderId attachment attachmentType createdAt"
               );
 
           // ---------------------------------------------------
@@ -309,7 +311,7 @@ export function RegisterChatEvents(
               )
               .populate(
                 "lastMessage",
-                "content senderId attachment createdAt"
+                "content senderId attachment attachmentType createdAt"
               );
 
           // ---------------------------------------------------
@@ -346,7 +348,7 @@ export function RegisterChatEvents(
           return;
         }
       } catch (error) {
-        console.error(
+        logger.error(
           "New Conversation Error:",
           error
         );
@@ -403,7 +405,7 @@ export function RegisterChatEvents(
 
         socket.join(conversationId);
 
-        console.log(
+        logger.debug(
           `User ${userId} joined room ${conversationId}`
         );
 
@@ -412,7 +414,7 @@ export function RegisterChatEvents(
           conversationId,
         });
       } catch (error) {
-        console.error(
+        logger.error(
           "Join Conversation Error:",
           error
         );
@@ -455,11 +457,11 @@ export function RegisterChatEvents(
 
         socket.leave(conversationId);
 
-        console.log(
+        logger.debug(
           `User ${userId} left room ${conversationId}`
         );
       } catch (error) {
-        console.error(
+        logger.error(
           "Leave Conversation Error:",
           error
         );
@@ -550,6 +552,26 @@ export function RegisterChatEvents(
             : null;
 
         // -----------------------------------------------------
+        // attachmentType: how clients render the attachment
+        // -----------------------------------------------------
+
+        const attachmentType =
+          attachment &&
+          (data.attachmentType === "image" ||
+            data.attachmentType === "video")
+            ? data.attachmentType
+            : null;
+
+        if (attachment && !attachmentType) {
+          socket.emit("newMessage", {
+            success: false,
+            msg: "Invalid attachment type",
+          });
+
+          return;
+        }
+
+        // -----------------------------------------------------
         // Message cannot be empty
         // -----------------------------------------------------
 
@@ -583,6 +605,8 @@ export function RegisterChatEvents(
             content,
 
             attachment,
+
+            attachmentType,
           });
 
         // -----------------------------------------------------
@@ -665,6 +689,10 @@ export function RegisterChatEvents(
             attachment:
               populatedMessage.attachment ?? null,
 
+            attachmentType:
+              (populatedMessage as { attachmentType?: string | null })
+                .attachmentType ?? null,
+
             createdAt:
               populatedMessage.createdAt,
           },
@@ -681,7 +709,7 @@ export function RegisterChatEvents(
             response
           );
       } catch (error) {
-        console.error(
+        logger.error(
           "New Message Error:",
           error
         );
@@ -818,7 +846,7 @@ export function RegisterChatEvents(
           }
         );
       } catch (error) {
-        console.error(
+        logger.error(
           "Get Messages Error:",
           error
         );

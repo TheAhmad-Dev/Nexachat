@@ -1,6 +1,7 @@
 import dns from "node:dns";
 import mongoose from "mongoose";
 import { env } from "./env.js";
+import { logger } from "../utils/logger.js";
 
 const configureMongoDns = (): void => {
     dns.setDefaultResultOrder("ipv4first");
@@ -25,9 +26,9 @@ const myconnectedDatabase = async (): Promise<void> => {
             serverSelectionTimeoutMS: 10_000,
         });
 
-        console.log(" There you go .MongoDB connected successfully  ✅");
+        logger.info("MongoDB connected successfully");
     } catch (error) {
-        console.error("MongoDB connection error:", error);
+        logger.error("MongoDB connection error:", error);
         throw error;
     }
 };

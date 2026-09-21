@@ -217,6 +217,7 @@
 
 import BackButton from "@/components/BackButton";
 import Button from "@/components/Button";
+import GoogleButton from "@/components/GoogleButton";
 import Typos from "@/components/typos";
 import {
   colors,
@@ -327,7 +328,7 @@ const Login = () => {
   const [isloading, setisloading] = useState(false);
   const [showpassword, setshowpassword] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, updateToken } = useAuth();
 
 
 
@@ -524,6 +525,23 @@ and   set show paswword is false by default
             </Typos>
           </Button>
 
+          {/* ===== DIVIDER ===== */}
+          <View style={styles.googleDivider}>
+            <View style={styles.dividerLine} />
+            <Typos style={styles.dividerText}>or</Typos>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* ===== CONTINUE WITH GOOGLE (self-contained component) ===== */}
+          <GoogleButton
+            onSession={async (session) => {
+              // Store the session exactly like a normal login.
+              await updateToken(session.token);
+              router.replace("/(main)/home");
+            }}
+            onError={(message) => Alert.alert("Google Sign-In", message)}
+          />
+
           <View style={styles.footer}>
             <Typos
               style={{
@@ -652,6 +670,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: spacingY._15,
+    gap: 5,
+  },
+
+  googleDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacingY._15,
+    marginBottom: spacingY._5,
+    gap: 10,
+  },
+
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+
+  dividerText: {
+    fontSize: 11,
+    color: colors.textGray,
   },
 });
 
