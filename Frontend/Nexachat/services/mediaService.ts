@@ -82,7 +82,8 @@ const downloadToFile = async (
   }
 };
 
-const extensionFromUrl = (url: string): string => {
+/** Filename extension of a media URL ("" when it has none). */
+export const extensionFromUrl = (url: string): string => {
   const match = url.split("?")[0].match(/\.([a-zA-Z0-9]{2,5})$/);
 
   return match ? match[1].toLowerCase() : "";
