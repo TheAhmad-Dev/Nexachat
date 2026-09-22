@@ -1,9 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import mongoose from "mongoose";
-// import Conversation from "../models/coversationSchema.js";
-
 import Conversation from "../utils/models/coversationSchema.js";
-// import Message from "../models/Message.js";
 import Message from "../utils/models/Message.js";
 import { logger } from "../utils/logger.js";
 
@@ -36,6 +33,53 @@ const getUniqueParticipants = (
   return [...new Set(participants)];
 };
 
+// Populate fields shared by every conversation response.
+const PARTICIPANT_FIELDS = "name email avatar";
+const LAST_MESSAGE_FIELDS =
+  "content senderId attachment attachmentType createdAt";
+
+/**
+ * Populated `senderId` document -> the sender shape clients get.
+ */
+const toSender = (populated: { senderId: unknown }) => {
+  return populated.senderId as unknown as {
+    _id: string;
+    name: string;
+    avatar: string;
+  };
+};
+
+/**
+ * The one tail shared by direct and group creation: populate,
+ * join the room, and emit the conversation.
+ */
+const joinAndSendConversation = async (
+  socket: Socket,
+  conversationId: string
+): Promise<void> => {
+  const populatedConversation = await Conversation.findById(
+    conversationId
+  )
+    .populate("participants", PARTICIPANT_FIELDS)
+    .populate("lastMessage", LAST_MESSAGE_FIELDS);
+
+  if (!populatedConversation) {
+    socket.emit("newConversation", {
+      success: false,
+      msg: "Failed to retrieve conversation",
+    });
+
+    return;
+  }
+
+  socket.join(String(populatedConversation._id));
+
+  socket.emit("newConversation", {
+    success: true,
+    data: populatedConversation,
+  });
+};
+
 export function RegisterChatEvents(
   io: SocketIOServer,
   socket: Socket
@@ -63,11 +107,11 @@ export function RegisterChatEvents(
         .sort({ updatedAt: -1 })
         .populate({
           path: "lastMessage",
-          select: "content senderId attachment attachmentType createdAt",
+          select: LAST_MESSAGE_FIELDS,
         })
         .populate({
           path: "participants",
-          select: "name email avatar",
+          select: PARTICIPANT_FIELDS,
         })
         .lean();
 
@@ -213,53 +257,10 @@ export function RegisterChatEvents(
               });
           }
 
-          // ---------------------------------------------------
-          // Populate conversation
-          // ---------------------------------------------------
-
-          const populatedConversation =
-            await Conversation.findById(
-              conversation._id
-            )
-              .populate(
-                "participants",
-                "name email avatar"
-              )
-              .populate(
-                "lastMessage",
-                "content senderId attachment attachmentType createdAt"
-              );
-
-          // ---------------------------------------------------
-          // findById can return null
-          // ---------------------------------------------------
-
-          if (!populatedConversation) {
-            socket.emit("newConversation", {
-              success: false,
-              msg: "Failed to retrieve conversation",
-            });
-
-            return;
-          }
-
-          // ---------------------------------------------------
-          // Join conversation room
-          // ---------------------------------------------------
-
-          const conversationId =
-            String(populatedConversation._id);
-
-          socket.join(conversationId);
-
-          // ---------------------------------------------------
-          // Send conversation to frontend
-          // ---------------------------------------------------
-
-          socket.emit("newConversation", {
-            success: true,
-            data: populatedConversation,
-          });
+          await joinAndSendConversation(
+            socket,
+            String(conversation._id)
+          );
 
           return;
         }
@@ -297,53 +298,10 @@ export function RegisterChatEvents(
               participants,
             });
 
-          // ---------------------------------------------------
-          // Populate group
-          // ---------------------------------------------------
-
-          const populatedConversation =
-            await Conversation.findById(
-              conversation._id
-            )
-              .populate(
-                "participants",
-                "name email avatar"
-              )
-              .populate(
-                "lastMessage",
-                "content senderId attachment attachmentType createdAt"
-              );
-
-          // ---------------------------------------------------
-          // findById can return null
-          // ---------------------------------------------------
-
-          if (!populatedConversation) {
-            socket.emit("newConversation", {
-              success: false,
-              msg: "Failed to retrieve conversation",
-            });
-
-            return;
-          }
-
-          // ---------------------------------------------------
-          // Join group room
-          // ---------------------------------------------------
-
-          const conversationId =
-            String(populatedConversation._id);
-
-          socket.join(conversationId);
-
-          // ---------------------------------------------------
-          // Send group to frontend
-          // ---------------------------------------------------
-
-          socket.emit("newConversation", {
-            success: true,
-            data: populatedConversation,
-          });
+          await joinAndSendConversation(
+            socket,
+            String(conversation._id)
+          );
 
           return;
         }
@@ -556,9 +514,8 @@ export function RegisterChatEvents(
         // -----------------------------------------------------
 
         const attachmentType =
-          attachment &&
-          (data.attachmentType === "image" ||
-            data.attachmentType === "video")
+          data.attachmentType === "image" ||
+          data.attachmentType === "video"
             ? data.attachmentType
             : null;
 
@@ -644,16 +601,7 @@ export function RegisterChatEvents(
           return;
         }
 
-        // -----------------------------------------------------
-        // Tell TypeScript what sender looks like
-        // -----------------------------------------------------
-
-        const sender =
-          populatedMessage.senderId as unknown as {
-            _id: string;
-            name: string;
-            avatar: string;
-          };
+        const sender = toSender(populatedMessage);
 
         if (!sender || !sender._id) {
           socket.emit("newMessage", {
@@ -813,12 +761,7 @@ export function RegisterChatEvents(
         const messagesWithSender =
           messages.map(
             (message) => {
-              const sender =
-                message.senderId as unknown as {
-                  _id: string;
-                  name: string;
-                  avatar: string;
-                };
+              const sender = toSender(message);
 
               return {
                 ...message,

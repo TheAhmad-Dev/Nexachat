@@ -15,6 +15,7 @@ Monorepo: `App_Backend/` (Express + Socket.IO, **npm**) and `Frontend/Nexachat/`
 
 ## Frontend (Frontend/Nexachat)
 
+- Media layer ownership: `mediaService.ts` owns ALL on-device media policy (`pickChatImage`/`pickChatVideo` via one internal `openGalleryPicker`, plus `saveToGallery`); `imageService.ts` owns Cloudinary upload (`ReadyToUploadMedia` handles both image+video via its `mediaType` arg). `Chatting.tsx` owns the only two media states — `selectedMedia` (composer attachment) and `viewer` (fullscreen image/video modal) — and `messagesContent` bubbles are pure presentation that report intent up via `onOpenMedia`/`onForwardMedia`/`onSaveToGallery`/`onDeleteMessage`. Don't put modals or players inside bubbles (a per-bubble `VideoPlayerModal` = one native player per message).
 - `constants/index.ts` is a barrel re-exporting `constants/config.ts`; `API_URL` lives ONLY in `config.ts`. Don't redefine it elsewhere.
 - `API_URL` resolution order in `config.ts`: explicit `EXPO_PUBLIC_API_URL` → runtime LAN detection via expo-constants (`hostUri`/`debuggerHost` — the Metro host IS the PC's WiFi IP) → platform fallbacks (`10.0.2.2` Android emulator, `localhost` otherwise). Tunnel hosts (`*.exp.direct`) are deliberately ignored — they can't proxy port 3000.
 - `EXPO_PUBLIC_*` vars are inlined at bundle time: restart Metro with `npx expo start -c` after editing `.env.local` or they silently don't apply.

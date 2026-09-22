@@ -22,9 +22,7 @@ interface VideoPlayerModalProps {
 
 const VideoPlayerModal = ({ source, onClose }: VideoPlayerModalProps) => {
   // expo-video accepts `null` as an "empty" source.
-  const player = useVideoPlayer((source ?? null) as any, (player) => {
-    player.loop = false;
-  });
+  const player = useVideoPlayer((source ?? null) as any);
 
   // New source (or reopen) -> play from the start.
   useEffect(() => {

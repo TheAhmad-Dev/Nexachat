@@ -9,14 +9,17 @@ import { ResponseProps } from "@/types";
  * mediaService — on-device media capabilities for chat
  * ============================================================
  *
- * - pickChatVideo(): gallery picker that accepts videos
- * - saveToGallery(url): downloads a remote image/video and
- *   saves it into the device gallery
+ * The single owner of everything that touches the device:
+ *   - pickChatImage() / pickChatVideo(): gallery pickers
+ *   - saveToGallery(url): downloads a remote image/video and
+ *     saves it into the device gallery
  * ============================================================
  */
 
-/** Opens the gallery and returns the picked video asset, or null. */
-export const pickChatVideo = async (): Promise<string | null> => {
+/** One permission + launch + error policy for every picker. */
+const openGalleryPicker = async (
+  options: ImagePicker.ImagePickerOptions
+): Promise<string | null> => {
   try {
     const permission =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,10 +33,7 @@ export const pickChatVideo = async (): Promise<string | null> => {
       return null;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["videos"],
-      quality: 1,
-    });
+    const result = await ImagePicker.launchImageLibraryAsync(options);
 
     if (!result.canceled && result.assets.length > 0) {
       return result.assets[0].uri;
@@ -41,13 +41,28 @@ export const pickChatVideo = async (): Promise<string | null> => {
 
     return null;
   } catch (error) {
-    console.log("Video picker error:", error);
+    console.log("Gallery picker error:", error);
 
     Alert.alert("Error", "Unable to open your gallery.");
 
     return null;
   }
 };
+
+/** Opens the gallery and returns the picked image asset, or null. */
+export const pickChatImage = (): Promise<string | null> =>
+  openGalleryPicker({
+    mediaTypes: ["images"],
+    aspect: [1, 1],
+    quality: 1,
+  });
+
+/** Opens the gallery and returns the picked video asset, or null. */
+export const pickChatVideo = (): Promise<string | null> =>
+  openGalleryPicker({
+    mediaTypes: ["videos"],
+    quality: 1,
+  });
 
 /** Writes a remote media URL to a local cache file and returns its path. */
 const downloadToFile = async (

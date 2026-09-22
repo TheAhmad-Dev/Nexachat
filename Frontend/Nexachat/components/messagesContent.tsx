@@ -1,34 +1,36 @@
 import {
   Alert,
   Image as RNImage,
-  Modal,
   Pressable,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import { Image } from "expo-image";
 import moment from "moment";
 import * as Icon from "phosphor-react-native";
 
-import { colors, radius, spacingX, spacingY } from "@/constants/theme";
+import { radius } from "@/constants/theme";
 import { scale, VerticalScale } from "@/utils/styling";
 import { MessageProps } from "@/types";
 import { useAuth } from "@/context/authcontext";
 
 import Avatar from "./Avatar";
 import Typos from "./typos";
-import VideoPlayerModal from "./VideoPlayerModal";
 
-// Renders chat message bubbles, handles media modal previews, and exposes a long-press action for deletion
-const MessagesContent = ({
-  item,
-  isDirect,
-  onDeleteMessage, // Function passed from parent component
-  onForwardMedia,
-  onSaveToGallery,
-}: {
+/*
+ * ============================================================
+ * MessagesContent — one chat bubble
+ * ============================================================
+ *
+ * Pure presentation: renders text / image / video according to
+ * `attachmentType` and reports user intent upward. The chat
+ * screen owns the fullscreen viewers and every action.
+ * ============================================================
+ */
+
+interface MessagesContentProps {
   item: MessageProps;
   isDirect: boolean;
   onDeleteMessage?: (messageId: string) => void;
@@ -40,10 +42,21 @@ const MessagesContent = ({
     mediaUrl: string,
     mediaType: "image" | "video"
   ) => void;
-}) => {
+  onOpenMedia?: (
+    mediaUrl: string,
+    mediaType: "image" | "video"
+  ) => void;
+}
+
+const MessagesContent = ({
+  item,
+  isDirect,
+  onDeleteMessage,
+  onForwardMedia,
+  onSaveToGallery,
+  onOpenMedia,
+}: MessagesContentProps) => {
   const { user: currentUser } = useAuth();
-  const [imageViewerVisible, setImageViewerVisible] = useState(false);
-  const [videoViewerVisible, setVideoViewerVisible] = useState(false);
 
   const attachmentType: "image" | "video" =
     item.attachmentType === "video" ? "video" : "image";
@@ -54,11 +67,6 @@ const MessagesContent = ({
     : moment(item.createdAt).format("MMM D, h:mm A");
 
   const isMe = currentUser?.id === item?.sender?.id;
-
-  const handleImageOpen = () => setImageViewerVisible(true);
-  const handleImageClose = () => setImageViewerVisible(false);
-  const handleVideoOpen = () => setVideoViewerVisible(true);
-  const handleVideoClose = () => setVideoViewerVisible(false);
 
   // Long press handler
   const handleLongPress = () => {
@@ -130,15 +138,18 @@ const MessagesContent = ({
 
         {/* ATTACHMENT */}
         {item.attachment && (
-          <>
-            <Pressable
-              onPress={isVideo ? handleVideoOpen : handleImageOpen}
-              onLongPress={handleLongPress}
-              delayLongPress={300}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
-            >
+          <Pressable
+            onPress={() =>
+              onOpenMedia &&
+              onOpenMedia(item.attachment as string, attachmentType)
+            }
+            onLongPress={handleLongPress}
+            delayLongPress={300}
+            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+          >
+            <View style={styles.attachmentWrapper}>
               {isVideo ? (
-                <View style={styles.videoThumbWrapper}>
+                <>
                   <RNImage
                     source={{ uri: item.attachment }}
                     style={styles.attachment}
@@ -153,90 +164,32 @@ const MessagesContent = ({
                       />
                     </View>
                   </View>
-
-                  <TouchableOpacity
-                    style={styles.downloadButton}
-                    hitSlop={6}
-                    onPress={() =>
-                      onSaveToGallery &&
-                      onSaveToGallery(
-                        item.attachment as string,
-                        "video"
-                      )
-                    }
-                  >
-                    <Icon.DownloadSimpleIcon
-                      size={17}
-                      color="#FFFFFF"
-                      weight="bold"
-                    />
-                  </TouchableOpacity>
-                </View>
+                </>
               ) : (
-                <View style={styles.videoThumbWrapper}>
-                  <Image
-                    source={item.attachment}
-                    contentFit="cover"
-                    style={styles.attachment}
-                    transition={100}
-                  />
-
-                  <TouchableOpacity
-                    style={styles.downloadButton}
-                    hitSlop={6}
-                    onPress={() =>
-                      onSaveToGallery &&
-                      onSaveToGallery(
-                        item.attachment as string,
-                        "image"
-                      )
-                    }
-                  >
-                    <Icon.DownloadSimpleIcon
-                      size={17}
-                      color="#FFFFFF"
-                      weight="bold"
-                    />
-                  </TouchableOpacity>
-                </View>
+                <Image
+                  source={item.attachment}
+                  contentFit="cover"
+                  style={styles.attachment}
+                  transition={100}
+                />
               )}
-            </Pressable>
 
-            <Modal
-              visible={imageViewerVisible}
-              transparent
-              animationType="fade"
-              onRequestClose={handleImageClose}
-            >
-              <View style={styles.modalBackground}>
-                <Pressable
-                  style={styles.modalBackdropClose}
-                  onPress={handleImageClose}
-                >
-                  <View style={styles.imageCardWrapper}>
-                    <Pressable
-                      style={styles.closeButton}
-                      onPress={handleImageClose}
-                      hitSlop={10}
-                    >
-                      <Icon.XIcon size={20} color="#FFFFFF" weight="bold" />
-                    </Pressable>
-
-                    <Image
-                      source={item.attachment}
-                      contentFit="cover"
-                      style={styles.fullScreenImage}
-                    />
-                  </View>
-                </Pressable>
-              </View>
-            </Modal>
-
-            <VideoPlayerModal
-              source={isVideo ? item.attachment : null}
-              onClose={handleVideoClose}
-            />
-          </>
+              <TouchableOpacity
+                style={styles.downloadButton}
+                hitSlop={6}
+                onPress={() =>
+                  onSaveToGallery &&
+                  onSaveToGallery(item.attachment as string, attachmentType)
+                }
+              >
+                <Icon.DownloadSimpleIcon
+                  size={17}
+                  color="#FFFFFF"
+                  weight="bold"
+                />
+              </TouchableOpacity>
+            </View>
+          </Pressable>
         )}
 
         {/* TEXT CONTENT */}
@@ -310,7 +263,7 @@ const styles = StyleSheet.create({
     borderRadius: radius._10,
     marginBottom: VerticalScale(2),
   },
-  videoThumbWrapper: {
+  attachmentWrapper: {
     position: "relative",
   },
   playOverlay: {
@@ -340,39 +293,5 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.55)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBackdropClose: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingHorizontal: scale(17),
-  },
-  imageCardWrapper: {
-    width: "100%",
-    maxHeight: "90%",
-    borderRadius: VerticalScale(20),
-    overflow: "hidden",
-    position: "relative",
-  },
-  closeButton: {
-    position: "absolute",
-    top: VerticalScale(12),
-    right: scale(12),
-    zIndex: 10,
-    padding: scale(6),
-    borderRadius: VerticalScale(16),
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  fullScreenImage: {
-    width: "100%",
-    height: "100%",
-    minHeight: VerticalScale(320),
   },
 });
