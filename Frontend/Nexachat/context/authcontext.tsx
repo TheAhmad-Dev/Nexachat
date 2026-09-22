@@ -1,20 +1,22 @@
-import { AuthContextProps, DecodedTokenProps, UserProps } from "@/types";
+import { AuthContextProps, UserProps } from "@/types";
 import {
-  Children,
   createContext,
   ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
-import { loginUser, registerUser } from "@/services/authservices";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { jwtDecode } from "jwt-decode";
 import { useRouter } from "expo-router";
-import { store } from "expo-router/build/global-state/router-store";
+import { loginUser, registerUser, refreshAccessToken } from "@/services/authservices";
+import {
+  getAccessToken,
+  saveAuthSession,
+  clearTokens,
+  decodeAccessToken,
+  isTokenExpired,
+} from "@/services/tokenStore";
 import { ConnectSocket, disconnectSocket } from "@/socket/sockets";
 import { registerAndSavePushToken } from "@/services/notificationService";
-
 
 export const AuthContext = createContext<AuthContextProps>({
   token: null,
@@ -33,36 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    loadToken();
+    // Any restore failure lands on the welcome screen.
+    loadToken().catch((error) => {
+      console.log("Failed to restore the session:", error);
+      goTOWlecomeScreen();
+    });
   }, []);
 
-  //This is the function to check weather the user is already logged in or not
-  const loadToken = async () => {
-    const StoredToekn = await AsyncStorage.getItem("token");
-    if (StoredToekn) {
-      try {
-        const decoded = jwtDecode<DecodedTokenProps>(StoredToekn);
-        if (decoded.exp && decoded.exp < Date.now() / 1000) {
-          await AsyncStorage.removeItem("token");
-          goTOWlecomeScreen();
-          return;
-        }
-        //user is logged in
-        setToken(StoredToekn);
-        setUser(decoded.user);
-        try {
-          await ConnectSocket();
-        } catch (error) {
-          console.log("Socket connection failed:", error);
-        }
-        goTOHomeScreen();
-      } catch (error) {
-        console.log("Failed to decode the Token ", error);
-      }
-    } else {
-      goTOWlecomeScreen();
-    }
-  };
   const goTOHomeScreen = () => {
     setTimeout(() => {
       router.replace("/(main)/home");
@@ -73,56 +52,75 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       router.replace("/(auth)/welcome");
     }, 1500);
   };
-  // const updateToken= async (token : string)=>{
-  // if(token){
-  //      //storge of user token in the Acsync Local Storage
-  //      await AsyncStorage.setItem("token" , token );
-  //      //now decoding the stored user token
-  //      const decodevalue = jwtDecode<DecodedTokenProps>(token)
-  //      console.log("decoded token of user : " , token )
-  //      setUser(decodevalue.user)
 
-  //      }
-  // }
-  const updateToken = async (token: string) => {
-    if (token) {
-      await AsyncStorage.setItem("token", token);
+  /** Persists a token and syncs session state from its claims. */
+  const adoptSession = async (token: string) => {
+    await saveAuthSession({ token });
+    setToken(token);
+    setUser(decodeAccessToken(token).user);
+  };
 
-      const decodedValue = jwtDecode<DecodedTokenProps>(token);
-
-      setToken(token);
-      setUser(decodedValue.user);
-      console.log("Decoded Token:", decodedValue);
+  /** Connects the socket, swallowing failure so login still completes. */
+  const connectSocketSafely = async () => {
+    try {
+      await ConnectSocket();
+    } catch (error) {
+      console.log("Socket connection failed:", error);
     }
   };
 
- 
-  const signIn = async (email: string, password: string) => {
+  // Checks whether the user is already logged in on boot.
+  const loadToken = async () => {
+    const storedToken = await getAccessToken();
 
-      // Login the user through your backend.
-    const Response = await loginUser(email, password);
-      // Save the JWT token and update the logged-in user.
-    await updateToken(Response.token);
-      // Connect the user to Socket.IO for real-time messaging.
+    if (!storedToken) {
+      goTOWlecomeScreen();
+      return;
+    }
+
+    if (isTokenExpired(storedToken)) {
+      /*
+       * Access token expired. Tokens are short-lived (15m) so
+       * this is the NORMAL path for a returning user, not an
+       * error. Try a silent refresh before giving up.
+       */
+      const refreshed = await refreshAccessToken();
+
+      if (refreshed?.token) {
+        await adoptSession(refreshed.token);
+        await connectSocketSafely();
+        goTOHomeScreen();
+        return;
+      }
+
+      // Refresh also failed -> truly logged out.
+      await clearTokens();
+      goTOWlecomeScreen();
+      return;
+    }
+
+    // Token still valid — user is logged in.
+    setToken(storedToken);
+    setUser(decodeAccessToken(storedToken).user);
+    await connectSocketSafely();
+    goTOHomeScreen();
+  };
+
+  const updateToken = async (token: string) => {
+    await adoptSession(token);
+  };
+
+  const completeSignIn = async (session: { token: string; refreshToken?: string }) => {
+    await saveAuthSession(session);
+    setToken(session.token);
+    setUser(decodeAccessToken(session.token).user);
     await ConnectSocket();
-
-/*
-   * For now, we only print the token.
-   *
-   * In the next step, we will send this token to your
-   * backend and save it with this user's account.
-   */
-
-
-const pushToken =
-  await registerAndSavePushToken(Response.token);
-
-console.log(
-  "Push token after login:",
-  pushToken
-);
-
+    await registerAndSavePushToken(session.token);
     router.replace("/(main)/home");
+  };
+
+  const signIn = async (email: string, password: string) => {
+    await completeSignIn(await loginUser(email, password));
   };
 
   const signUp = async (
@@ -131,31 +129,13 @@ console.log(
     password: string,
     avatar?: string | null,
   ) => {
-     // Create the new account through your backend.
-    const Response = await registerUser(name, email, password, avatar ?? "");
-      // Save the JWT and update the logged-in user.
-    await updateToken(Response.token);
-
-     // Connect the new user to Socket.IO.
-    await ConnectSocket();
-
-/*
-   * For now, we only print the token.
-   *
-   * In the next step, we will send this token to your
-   * backend and save it with this user's account.
-   */
-const pushToken =
-  await registerAndSavePushToken(Response.token);
-
-console.log(
-  "Push token after login:",
-  pushToken
-);
-    router.replace("/(main)/home");
+    await completeSignIn(
+      await registerUser(name, email, password, avatar ?? "")
+    );
   };
+
   const signOut = async () => {
-    await AsyncStorage.removeItem("token"); //here we are pausing the key
+    await clearTokens();
     await disconnectSocket();
     setToken(null);
     setUser(null);

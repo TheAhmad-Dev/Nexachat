@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 // import Message from "../models/Message.js";
 import Message from "../utils/models/Message.js";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware.js";
+import { logger } from "../utils/logger.js";
 
 export const deleteMessage = async (
   req: AuthenticatedRequest,
@@ -61,7 +62,7 @@ if (Array.isArray(messageId)) {
       message: "Message deleted successfully",
     });
   } catch (error) {
-    console.error("Delete message error:", error);
+    logger.error("Delete message error:", error);
 
     res.status(500).json({
       success: false,

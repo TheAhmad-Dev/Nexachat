@@ -597,6 +597,7 @@ const handleLogout = () => {
               style={{
                 width: cardWidth,
               }}
+              onPress={() => router.push("/(main)/AppSettings")}
             >
               <View style={[styles.glassCard, styles.dashboardCard]}>
                 <View style={styles.cardHeader}>

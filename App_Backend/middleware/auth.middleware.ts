@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { env } from "../config/env.js";
+import { verifyAccessToken } from "../utils/token.js";
+import { logger } from "../utils/logger.js";
 
 /*
  * ---------------------------------------------------------
@@ -23,116 +23,45 @@ export interface AuthenticatedRequest extends Request {
  * AUTHENTICATION MIDDLEWARE
  * ---------------------------------------------------------
  *
- * Expected header:
+ * Expected header: "Authorization: Bearer <accessToken>".
  *
- * Authorization: Bearer YOUR_JWT_TOKEN
- *
- * The JWT was created by your existing generateToken()
- * function.
- *
- * Its structure is:
- *
- * {
- *   user: {
- *     email,
- *     name,
- *     id,
- *     avatar
- *   }
- * }
+ * All verification policy (secret, TTL, refresh-token
+ * rejection) lives in utils/token.ts — this middleware only
+ * extracts the header and maps the result to a 401.
  */
 export const authenticate = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): void => {
-  try {
-    /*
-     * Get the Authorization header.
-     */
-    const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-    /*
-     * Make sure the header exists and follows:
-     *
-     * Bearer TOKEN
-     */
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        success: false,
-        msg: "Authentication required",
-      });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({
+      success: false,
+      msg: "Authentication required",
+    });
 
-      return;
-    }
+    return;
+  }
 
-    /*
-     * Remove "Bearer " and keep only the JWT.
-     */
-    const token = authHeader.split(" ")[1];
+  const token = authHeader.slice("Bearer ".length);
 
-    if (!token) {
-      res.status(401).json({
-        success: false,
-        msg: "Invalid authentication token",
-      });
+  // Single verification policy, shared with the socket handshake.
+  const payload = verifyAccessToken(token);
 
-      return;
-    }
-
-    /*
-     * Verify the JWT using the SAME secret used by
-     * generateToken().
-     */
-    const decoded = jwt.verify(token, env.jwtSecret) as {
-      user?: {
-        id?: string;
-      };
-    };
-
-    /*
-     * Our generateToken() creates:
-     *
-     * {
-     *   user: {
-     *     id: "..."
-     *   }
-     * }
-     *
-     * Therefore the logged-in user's ID is:
-     *
-     * decoded.user.id
-     */
-    const userId = decoded.user?.id;
-
-    if (!userId) {
-      res.status(401).json({
-        success: false,
-        msg: "Invalid authentication token",
-      });
-
-      return;
-    }
-
-    /*
-     * Attach the authenticated user's ID to the request.
-     *
-     * Controllers can now use:
-     *
-     * request.userId
-     */
-    req.userId = userId;
-
-    /*
-     * Continue to the controller.
-     */
-    next();
-  } catch (error) {
-    console.log("Authentication failed:", error);
+  if (!payload) {
+    logger.debug("Authentication failed: invalid or expired token");
 
     res.status(401).json({
       success: false,
       msg: "Invalid or expired token",
     });
+
+    return;
   }
+
+  req.userId = payload.user.id;
+
+  next();
 };

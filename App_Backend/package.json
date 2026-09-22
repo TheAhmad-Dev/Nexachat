@@ -4,20 +4,21 @@
   "description": "NexaChat backend API and Socket.IO server",
   "type": "module",
   "main": "dist/index.js",
- "scripts": {
-  "dev": "nodemon --exec tsx index.ts",
-  "build": "tsc",
-  "start": "node dist/index.js",
-  "typecheck": "tsc --noEmit",
-  "test": "npm run typecheck"
-},
-
+  "scripts": {
+    "dev": "nodemon --exec tsx index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && tsx tests/auth.api.test.ts && tsx tests/socket.auth.test.ts"
+  },
   "dependencies": {
+    "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.1.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.3",
@@ -28,7 +29,9 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
+    "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14",
+    "socket.io-client": "^4.8.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.0",
     "typescript": "^5.9.3"

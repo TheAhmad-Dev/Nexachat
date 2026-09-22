@@ -3,11 +3,12 @@ import { Server as IOSocketServer, Socket } from "socket.io";
 import User from "../utils/models/User.js";
 
 import { generateToken } from "../utils/token.js";
+import { logger } from "../utils/logger.js";
 
 export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
   // Test Socket
   socket.on("TestSocket", (data) => {
-    console.log("Received:", data);
+    logger.debug("Received:", data);
 
     socket.emit("TestSocket", {
       msg: "User Socket is working ✅",
@@ -18,7 +19,7 @@ export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
   socket.on(
     "Update Profile",
     async (data: { name?: string; avatar?: string | null }) => {
-      console.log("Update Profile Received:", data);
+      logger.debug("Update Profile Received:", data);
 
       const userId = socket.data.userId;
 
@@ -70,7 +71,7 @@ export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
           msg: "Profile Updated Successfully",
         });
       } catch (error) {
-        console.log("Error Updating Profile:", error);
+        logger.error("Error Updating Profile:", error);
 
         socket.emit("UpdatedProfile", {
           success: false,
@@ -81,7 +82,7 @@ export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
     },
   );
   socket.on("getcontacts", async () => {
-    console.log("✅ getcontacts event received");
+    logger.debug("getcontacts event received");
     try {
       const currentUserId = socket.data.userId;
       if (!currentUserId) {
@@ -97,8 +98,7 @@ export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
         { password: 0 }, //password field will be zero
       ).lean(); //
 
-      console.log("Current User:", currentUserId);
-      console.log("Users:", users);
+      logger.debug("Current User:", currentUserId);
 
       //Mapping All the contacts
       const contacts = users.map((user) => ({
@@ -113,7 +113,7 @@ export function RegisterUserEvents(io: IOSocketServer, socket: Socket) {
         data: contacts,
       });
     } catch (error: any) {
-      console.log("Get Contacts error :  ", error);
+      logger.error("Get Contacts error:", error);
       socket.emit("getcontacts", {
         success: false,
         msg: "Failed to fetch  Contacts ",

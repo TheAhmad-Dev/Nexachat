@@ -19,6 +19,13 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
+    // "image" | "video" — how clients should render `attachment`.
+    attachmentType: {
+      type: String,
+      enum: ["image", "video", null],
+      default: null,
+    },
+
     content: {
       type: String,
       default: "",
