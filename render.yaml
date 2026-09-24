@@ -1,0 +1,27 @@
+# Render.com Blueprint — NexaChat backend (free tier)
+#
+# Deploy: render.com dashboard -> New + -> Blueprint -> pick this repo
+# -> pick the branch containing this file -> Apply.
+# Render will ask for the three secret values (sync: false) at creation:
+# copy them from App_Backend/.env on the dev machine (Mongo_Uri,
+# JWT_SECRET, JWT_REFRESH_SECRET).
+
+services:
+  - type: web
+    name: nexachat-backend
+    runtime: node
+    plan: free
+    rootDir: App_Backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: Mongo_Uri
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
